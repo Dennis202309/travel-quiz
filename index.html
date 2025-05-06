@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅行目的地推荐</title>
+    <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Microsoft YaHei', sans-serif;
+    }
+
+    body {
+        background-color: #f5f7fa;
+        color: #333;
+        line-height: 1.6;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+    }
+
+    #quiz-container {
+        background-color: #fff;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #question-title {
+        margin-bottom: 20px;
+        color: #3498db;
+    }
+
+    #question-text {
+        font-size: 18px;
+        margin-bottom: 20px;
+    }
+
+    #options-container {
+        margin-bottom: 30px;
+    }
+
+    .option-item {
+        margin-bottom: 15px;
+    }
+
+    .radio-option, .slider-option {
+        margin-bottom: 20px;
+    }
+
+    .radio-option label {
+        display: block;
+        padding: 12px 15px;
+        background-color: #f1f5f9;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-bottom: 10px;
+    }
+
+    .radio-option input[type="radio"] {
+        margin-right: 10px;
+    }
+
+    .radio-option label:hover {
+        background-color: #e2e8f0;
+    }
+
+    .slider-container {
+        width: 100%;
+        padding: 10px 0;
+    }
+
+    .slider-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+
+    .slider {
+        width: 100%;
+        height: 10px;
+    }
+
+    .buttons {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    button {
+        padding: 10px 20px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+    }
+
+    button:hover {
+        background-color: #2980b9;
+    }
+
+    button:disabled {
+        background-color: #bdc3c7;
+        cursor: not-allowed;
+    }
+
+    #result-container {
+        text-align: center;
+    }
+
+    #destination-name {
+        font-size: 28px;
+        color: #3498db;
+        margin: 20px 0;
+    }
+
+    #destination-description {
+        margin-bottom: 30px;
+        line-height: 1.8;
+    }
+
+    #restart-btn {
+        margin-top: 20px;
+    }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>旅行目的地推荐系统</h1>
+            <p>回答以下问题，我们将为您推荐最适合的旅行目的地！</p>
+        </header>
+
+        <div id="quiz-container">
+            <div id="question-container">
+                <h2 id="question-title">问题 1/10</h2>
+                <p id="question-text"></p>
+                <div id="options-container"></div>
+                <div class="buttons">
+                    <button id="prev-btn" disabled>上一题</button>
+                    <button id="next-btn">下一题</button>
+                </div>
+            </div>
+            <div id="result-container" style="display: none;">
+                <h2>您的理想旅行目的地是：</h2>
+                <div id="destination-result">
+                    <h3 id="destination-name"></h3>
+                    <p id="destination-description"></p>
+                </div>
+                <button id="restart-btn">重新开始</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // 问题列表
+    const questions = [
+        {
+            id: 1,
+            text: "您更喜欢什么类型的旅行环境？",
+            type: "radio",
+            options: [
+                { text: "繁华的城市", score: { urban: 10, nature: 0, culture: 5, adventure: 3, relaxation: 2 } },
+                { text: "自然风光", score: { urban: 0, nature: 10, culture: 3, adventure: 7, relaxation: 8 } },
+                { text: "历史古迹", score: { urban: 5, nature: 3, culture: 10, adventure: 2, relaxation: 4 } },
+                { text: "海滩度假", score: { urban: 2, nature: 7, culture: 3, adventure: 5, relaxation: 10 } },
+                { text: "其他", score: { urban: 5, nature: 5, culture: 5, adventure: 5, relaxation: 5 } }
+            ]
+        },
+        {
+            id: 2,
+            text: "您对当地美食的重视程度？",
+            type: "slider",
+            min: 1,
+            max: 10,
+            scoreKey: "food"
+        },
+        {
+            id: 3,
+            text: "您期望的旅行预算是？",
+            type: "radio",
+            options: [
+                { text: "经济实惠型", score: { budget: 2, luxury: 0 } },
+                { text: "中等消费", score: { budget: 5, luxury: 5 } },
+                { text: "高端奢华", score: { budget: 0, luxury: 10 } },
+                { text: "其他", score: { budget: 4, luxury: 4 } }
+            ]
+        },
+        {
+            id: 4,
+            text: "您更喜欢什么样的气候？",
+            type: "radio",
+            options: [
+                { text: "温暖阳光", score: { warm: 10, cold: 0 } },
+                { text: "凉爽宜人", score: { warm: 5, cold: 5 } },
+                { text: "寒冷雪景", score: { warm: 0, cold: 10 } },
+                { text: "其他", score: { warm: 5, cold: 5 } }
+            ]
+        },
+        {
+            id: 5,
+            text: "您对冒险活动的喜好程度？",
+            type: "slider",
+            min: 1,
+            max: 10,
+            scoreKey: "adventure"
+        },
+        {
+            id: 6,
+            text: "您更喜欢哪种交通方式？",
+            type: "radio",
+            options: [
+                { text: "公共交通", score: { urban: 8, nature: 2 } },
+                { text: "自驾游", score: { urban: 5, nature: 7 } },
+                { text: "徒步探索", score: { urban: 2, nature: 9, adventure: 8 } },
+                { text: "其他", score: { urban: 5, nature: 5, adventure: 5 } }
+            ]
+        },
+        {
+            id: 7,
+            text: "您对文化体验的重视程度？",
+            type: "slider",
+            min: 1,
+            max: 10,
+            scoreKey: "culture"
+        },
+        {
+            id: 8,
+            text: "您期望的旅行时长是？",
+            type: "radio",
+            options: [
+                { text: "短途周末游(1-3天)", score: { urban: 7, nature: 3 } },
+                { text: "中等时长(4-7天)", score: { urban: 5, nature: 5, culture: 6 } },
+                { text: "长途旅行(一周以上)", score: { urban: 3, nature: 8, culture: 8, adventure: 7 } },
+                { text: "其他", score: { urban: 5, nature: 5, culture: 5, adventure: 5 } }
+            ]
+        },
+        {
+            id: 9,
+            text: "您更看重哪种住宿体验？",
+            type: "radio",
+            options: [
+                { text: "豪华酒店", score: { urban: 8, luxury: 10, relaxation: 8 } },
+                { text: "特色民宿", score: { culture: 8, relaxation: 6 } },
+                { text: "经济型酒店", score: { budget: 8, urban: 6 } },
+                { text: "露营/自然体验", score: { nature: 10, adventure: 8, budget: 7 } },
+                { text: "其他", score: { urban: 5, luxury: 5, relaxation: 5, culture: 5, budget: 5, nature: 5, adventure: 5 } }
+            ]
+        },
+        {
+            id: 10,
+            text: "您是否喜欢人少的小众目的地？",
+            type: "radio",
+            options: [
+                { text: "非常喜欢", score: { urban: 0, nature: 8, adventure: 7 } },
+                { text: "一般", score: { urban: 5, nature: 5 } },
+                { text: "更喜欢热门景点", score: { urban: 8, culture: 7 } },
+                { text: "其他", score: { urban: 5, nature: 5, adventure: 5, culture: 5 } }
+            ]
+        }
+    ];
+
+    // 城市数据
+    const destinations = [
+        // 中国城市
+        {
+            name: "北京",
+            description: "中国的首都，拥有丰富的历史文化遗产和现代化都市风貌，长城、故宫、天坛等世界级景点让您流连忘返。",
+            scores: { urban: 9, nature: 4, culture: 10, adventure: 5, relaxation: 3, food: 8, budget: 6, luxury: 7, warm: 5, cold: 6 }
+        },
+        {
+            name: "上海",
+            description: "中国的国际大都市，融合了东西方文化，拥有繁华的商业区、特色的石库门建筑和丰富的夜生活。",
+            scores: { urban: 10, nature: 2, culture: 7, adventure: 3, relaxation: 4, food: 9, budget: 4, luxury: 9, warm: 7, cold: 4 }
+        },
+        {
+            name: "广州",
+            description: "岭南文化的中心，拥有独特的粤式风情和美食文化，白云山、陈家祠等景点展现了岭南特色。",
+            scores: { urban: 8, nature: 5, culture: 7, adventure: 4, relaxation: 6, food: 10, budget: 6, luxury: 7, warm: 9, cold: 1 }
+        },
+        {
+            name: "深圳",
+            description: "中国改革开放的窗口，现代化都市与自然风光并存，大梅沙、世界之窗等景点各具特色。",
+            scores: { urban: 9, nature: 6, culture: 5, adventure: 5, relaxation: 6, food: 8, budget: 5, luxury: 8, warm: 9, cold: 1 }
+        },
+        {
+            name: "成都",
+            description: "四川省会，以悠闲生活方式和美食闻名，拥有大熊猫基地、锦里古街等特色景点，是休闲度假的理想之地。",
+            scores: { urban: 7, nature: 6, culture: 8, adventure: 5, relaxation: 9, food: 10, budget: 7, luxury: 6, warm: 6, cold: 4 }
+        },
+        {
+            name: "重庆",
+            description: "山城特色的直辖市，拥有独特的地形和火锅文化，洪崖洞、长江索道等景点展现了山城魅力。",
+            scores: { urban: 8, nature: 7, culture: 7, adventure: 7, relaxation: 6, food: 10, budget: 7, luxury: 6, warm: 8, cold: 3 }
+        },
+        {
+            name: "西安",
+            description: "中国古代文明的发祥地之一，拥有兵马俑、古城墙等历史遗迹，是了解中国历史文化的重要窗口。",
+            scores: { urban: 6, nature: 4, culture: 9, adventure: 4, relaxation: 5, food: 8, budget: 7, luxury: 5, warm: 6, cold: 5 }
+        },
+        {
+            name: "杭州",
+            description: "以西湖闻名的江南水乡，拥有优美的自然风光和深厚的文化底蕴，是休闲度假的理想选择。",
+            scores: { urban: 7, nature: 8, culture: 8, adventure: 4, relaxation: 8, food: 8, budget: 6, luxury: 7, warm: 7, cold: 4 }
+        },
+        {
+            name: "南京",
+            description: "六朝古都，拥有丰富的历史文化遗产，中山陵、夫子庙等景点展现了不同时期的历史风貌。",
+            scores: { urban: 7, nature: 6, culture: 9, adventure: 4, relaxation: 6, food: 7, budget: 7, luxury: 6, warm: 7, cold: 4 }
+        },
+        {
+            name: "武汉",
+            description: "长江中游的重要城市，拥有黄鹤楼、东湖等著名景点，江汉路步行街展现了武汉的商业活力。",
+            scores: { urban: 7, nature: 6, culture: 7, adventure: 5, relaxation: 6, food: 8, budget: 7, luxury: 5, warm: 8, cold: 3 }
+        },
+        {
+            name: "三亚",
+            description: "中国著名的热带海滨城市，拥有美丽的海滩、清澈的海水和丰富的热带风情，是放松身心的绝佳去处。",
+            scores: { urban: 5, nature: 8, culture: 4, adventure: 6, relaxation: 10, food: 7, budget: 4, luxury: 8, warm: 10, cold: 0 }
+        },
+        {
+            name: "丽江",
+            description: "云南的古城，拥有独特的纳西族文化和壮丽的自然风光，古城、玉龙雪山让您感受不一样的风情。",
+            scores: { urban: 3, nature: 9, culture: 8, adventure: 7, relaxation: 7, food: 7, budget: 6, luxury: 5, warm: 6, cold: 4 }
+        },
+        {
+            name: "厦门",
+            description: "福建沿海城市，拥有美丽的海滩、鼓浪屿和特色的闽南文化，是休闲旅游的热门选择。",
+            scores: { urban: 6, nature: 7, culture: 7, adventure: 5, relaxation: 8, food: 8, budget: 7, luxury: 6, warm: 8, cold: 3 }
+        },
+        {
+            name: "青岛",
+            description: "山东沿海城市，拥有美丽的海滩、欧式建筑和啤酒文化，是夏季避暑的理想之地。",
+            scores: { urban: 6, nature: 7, culture: 6, adventure: 5, relaxation: 8, food: 7, budget: 7, luxury: 6, warm: 6, cold: 5 }
+        },
+        {
+            name: "大连",
+            description: "辽宁沿海城市，拥有星海广场、金石滩等景点，欧式建筑与海滨风光相得益彰。",
+            scores: { urban: 6, nature: 7, culture: 5, adventure: 5, relaxation: 7, food: 7, budget: 6, luxury: 6, warm: 5, cold: 6 }
+        },
+        {
+            name: "拉萨",
+            description: "西藏的首府，拥有雄伟的布达拉宫和浓厚的藏传佛教文化，是探索高原文化的神秘之地。",
+            scores: { urban: 4, nature: 9, culture: 9, adventure: 8, relaxation: 5, food: 6, budget: 5, luxury: 5, warm: 4, cold: 7 }
+        },
+        {
+            name: "香格里拉",
+            description: "云南的高原天堂，拥有壮丽的雪山、湖泊和草原，藏族文化浓厚，是探索自然和文化的理想之地。",
+            scores: { urban: 2, nature: 10, culture: 7, adventure: 9, relaxation: 6, food: 6, budget: 5, luxury: 6, warm: 3, cold: 8 }
+        },
+        {
+            name: "九寨沟",
+            description: "四川的自然保护区，以五彩斑斓的湖泊、瀑布和原始森林闻名，是大自然的杰作。",
+            scores: { urban: 1, nature: 10, culture: 5, adventure: 8, relaxation: 7, food: 5, budget: 5, luxury: 6, warm: 4, cold: 7 }
+        },
+        {
+            name: "桂林",
+            description: "广西著名旅游城市，以山水甲天下闻名，漓江、阳朔等地的喀斯特地貌景观令人叹为观止。",
+            scores: { urban: 5, nature: 10, culture: 7, adventure: 7, relaxation: 8, food: 7, budget: 6, luxury: 6, warm: 8, cold: 3 }
+        },
+        {
+            name: "张家界",
+            description: "湖南的自然景区，以奇特的石柱地貌闻名，天门山、玻璃栈道等景点令人惊叹。",
+            scores: { urban: 3, nature: 10, culture: 5, adventure: 9, relaxation: 6, food: 6, budget: 6, luxury: 5, warm: 7, cold: 4 }
+        },
+        {
+            name: "黄山",
+            description: "安徽著名的山岳景区，以奇松、怪石、云海、温泉四绝闻名，是中国传统山水画的灵感来源。",
+            scores: { urban: 2, nature: 10, culture: 7, adventure: 8, relaxation: 6, food: 6, budget: 6, luxury: 5, warm: 5, cold: 6 }
+        },
+        {
+            name: "苏州",
+            description: "江南园林之城，拥有众多古典园林和水乡古镇，展现了江南水乡的精致与典雅。",
+            scores: { urban: 6, nature: 7, culture: 9, adventure: 3, relaxation: 8, food: 8, budget: 7, luxury: 7, warm: 7, cold: 4 }
+        },
+        {
+            name: "洛阳",
+            description: "河南古都，拥有龙门石窟、白马寺等历史文化遗产，牡丹花会闻名全国。",
+            scores: { urban: 5, nature: 6, culture: 9, adventure: 4, relaxation: 6, food: 7, budget: 7, luxury: 5, warm: 7, cold: 4 }
+        },
+        {
+            name: "大理",
+            description: "云南著名旅游城市，拥有洱海、苍山等自然景观和白族文化，是休闲度假的理想之地。",
+            scores: { urban: 4, nature: 9, culture: 8, adventure: 6, relaxation: 8, food: 7, budget: 7, luxury: 5, warm: 7, cold: 4 }
+        },
+        {
+            name: "敦煌",
+            description: "甘肃西部的历史文化名城，以莫高窟、鸣沙山、月牙泉等景点闻名，是丝绸之路上的重要驿站。",
+            scores: { urban: 3, nature: 8, culture: 10, adventure: 7, relaxation: 5, food: 6, budget: 6, luxury: 5, warm: 7, cold: 4 }
+        },
+        {
+            name: "西双版纳",
+            description: "云南南部的热带雨林区域，拥有独特的热带风光和少数民族文化，是探索自然与民族风情的好去处。",
+            scores: { urban: 3, nature: 9, culture: 8, adventure: 7, relaxation: 7, food: 7, budget: 6, luxury: 5, warm: 9, cold: 1 }
+        },
+        {
+            name: "青海湖",
+            description: "中国最大的内陆湖泊，湖水碧蓝，周围是辽阔的草原，是摄影和观鸟的理想之地。",
+            scores: { urban: 1, nature: 10, culture: 6, adventure: 7, relaxation: 8, food: 5, budget: 6, luxury: 4, warm: 4, cold: 7 }
+        },
+        {
+            name: "长白山",
+            description: "吉林著名的山岳景区，拥有天池、温泉、瀑布等自然景观，是夏季避暑和冬季滑雪的好去处。",
+            scores: { urban: 2, nature: 10, culture: 5, adventure: 8, relaxation: 7, food: 6, budget: 5, luxury: 6, warm: 3, cold: 9 }
+        },
+        {
+            name: "乌镇",
+            description: "浙江的水乡古镇，保存完好的明清建筑和水乡风貌，是体验江南水乡生活的理想之地。",
+            scores: { urban: 4, nature: 7, culture: 9, adventure: 3, relaxation: 8, food: 8, budget: 6, luxury: 7, warm: 7, cold: 4 }
+        },
+        {
+            name: "凤凰古城",
+            description: "湖南西部的古城，沱江穿城而过，吊脚楼依水而建，是体验湘西文化的好去处。",
+            scores: { urban: 3, nature: 7, culture: 9, adventure: 5, relaxation: 7, food: 7, budget: 6, luxury: 5, warm: 7, cold: 4 }
+        },
+        {
+            name: "阳朔",
+            description: "广西桂林市下辖县，以漓江山水和田园风光闻名，是徒步、攀岩和漂流的好去处。",
+            scores: { urban: 3, nature: 10, culture: 6, adventure: 8, relaxation: 7, food: 7, budget: 7, luxury: 5, warm: 8, cold: 3 }
+        },
+        {
+            name: "稻城亚丁",
+            description: "四川西部的自然保护区，拥有雪山、草甸、湖泊等原始自然风光，被誉为'最后的香格里拉'。",
+            scores: { urban: 1, nature: 10, culture: 6, adventure: 9, relaxation: 7, food: 5, budget: 5, luxury: 5, warm: 3, cold: 8 }
+        },
+        {
+            name: "五台山",
+            description: "山西著名的佛教圣地，拥有众多寺庙和佛教文化遗产，是朝圣和文化探索的好去处。",
+            scores: { urban: 2, nature: 8, culture: 9, adventure: 5, relaxation: 6, food: 6, budget: 6, luxury: 4, warm: 5, cold: 6 }
+        },
+        {
+            name: "鼓浪屿",
+            description: "厦门的离岛，拥有独特的历史建筑和文艺氛围，是休闲度假的理想之地。",
+            scores: { urban: 5, nature: 7, culture: 8, adventure: 4, relaxation: 9, food: 8, budget: 6, luxury: 7, warm: 8, cold: 3 }
+        },
+        {
+            name: "呼伦贝尔",
+            description: "内蒙古北部的大草原，拥有辽阔的草原风光和独特的蒙古族文化，是夏季避暑的好去处。",
+            scores: { urban: 1, nature: 10, culture: 7, adventure: 8, relaxation: 7, food: 6, budget: 6, luxury: 5, warm: 5, cold: 7 }
+        },
+        {
+            name: "张掖",
+            description: "甘肃西部的城市，以七彩丹霞地貌闻名，是丝绸之路上的重要驿站。",
+            scores: { urban: 3, nature: 9, culture: 7, adventure: 7, relaxation: 6, food: 6, budget: 6, luxury: 4, warm: 6, cold: 5 }
+        },
+        {
+            name: "婺源",
+            description: "江西的古村落，以徽派建筑和油菜花田闻名，是摄影和体验乡村生活的好去处。",
+            scores: { urban: 2, nature: 8, culture: 8, adventure: 5, relaxation: 7, food: 7, budget: 7, luxury: 4, warm: 6, cold: 5 }
+        },
+        {
+            name: "神农架",
+            description: "湖北西部的原始森林区，拥有丰富的生物多样性和原始自然风光，是探索自然的好去处。",
+            scores: { urban: 1, nature: 10, culture: 5, adventure: 9, relaxation: 6, food: 5, budget: 6, luxury: 4, warm: 5, cold: 6 }
+        },
+        {
+            name: "平遥古城",
+            description: "山西的古城，保存完好的明清古城，是了解中国古代城市和商业文化的好去处。",
+            scores: { urban: 4, nature: 4, culture: 10, adventure: 4, relaxation: 6, food: 7, budget: 7, luxury: 5, warm: 6, cold: 5 }
+        },
+        {
+            name: "腾冲",
+            description: "云南西部的边境城市，拥有火山地热和多元文化，是休闲度假的好去处。",
+            scores: { urban: 3, nature: 8, culture: 7, adventure: 6, relaxation: 8, food: 7, budget: 6, luxury: 6, warm: 7, cold: 4 }
+        },
+        {
+            name: "莫干山",
+            description: "浙江的山区，以竹林和别墅区闻名，是夏季避暑和休闲度假的好去处。",
+            scores: { urban: 2, nature: 9, culture: 6, adventure: 6, relaxation: 9, food: 7, budget: 5, luxury: 7, warm: 6, cold: 5 }
+        },
+        {
+            name: "北戴河",
+            description: "河北的海滨度假区，拥有美丽的海滩和避暑胜地的历史，是夏季度假的好去处。",
+            scores: { urban: 4, nature: 7, culture: 5, adventure: 4, relaxation: 9, food: 7, budget: 6, luxury: 6, warm: 7, cold: 4 }
+        },
+        {
+            name: "雁荡山",
+            description: "浙江的山岳景区，以奇峰怪石和佛教文化闻名，是登山和文化探索的好去处。",
+            scores: { urban: 2, nature: 9, culture: 7, adventure: 8, relaxation: 6, food: 6, budget: 6, luxury: 5, warm: 6, cold: 5 }
+        },
+        {
+            name: "庐山",
+            description: "江西的山岳景区，以云雾、瀑布和避暑胜地的历史闻名，是夏季避暑的好去处。",
+            scores: { urban: 3, nature: 9, culture: 8, adventure: 6, relaxation: 7, food: 6, budget: 6, luxury: 6, warm: 6, cold: 5 }
+        },
+        {
+            name: "武夷山",
+            description: "福建的山岳景区，以丹霞地貌和茶文化闻名，是徒步和文化探索的好去处。",
+            scores: { urban: 3, nature: 9, culture: 8, adventure: 7, relaxation: 7, food: 7, budget: 6, luxury: 6, warm: 7, cold: 4 }
+        },
+        {
+            name: "井冈山",
+            description: "江西的革命老区，拥有红色文化和自然风光，是红色旅游和徒步的好去处。",
+            scores: { urban: 2, nature: 8, culture: 8, adventure: 7, relaxation: 6, food: 6, budget: 7, luxury: 4, warm: 7, cold: 4 }
+        },
+        {
+            name: "嵩山",
+            description: "河南的山岳景区，以少林寺和武术文化闻名，是文化探索和徒步的好去处。",
+            scores: { urban: 2, nature: 8, culture: 9, adventure: 7, relaxation: 6, food: 6, budget: 7, luxury: 5, warm: 6, cold: 5 }
+        },
+        {
+            name: "泰山",
+            description: "山东的著名山岳，中国五岳之首，拥有丰富的历史文化和自然风光，是登山和文化探索的好去处。",
+            scores: { urban: 3, nature: 8, culture: 9, adventure: 7, relaxation: 5, food: 7, budget: 7, luxury: 5, warm: 6, cold: 5 }
+        },
+        {
+            name: "西塘",
+            description: "浙江的水乡古镇，保存完好的明清建筑和水乡风貌，是体验江南水乡生活的理想之地。",
+            scores: { urban: 4, nature: 7, culture: 9, adventure: 3, relaxation: 8, food: 8, budget: 6, luxury: 6, warm: 7, cold: 4 }
+        },
+        {
+            name: "周庄",
+            description: "江苏的水乡古镇，被誉为'中国第一水乡'，是体验江南水乡生活的理想之地。",
+            scores: { urban: 4, nature: 7, culture: 9, adventure: 3, relaxation: 8, food: 8, budget: 6, luxury: 6, warm: 7, cold: 4 }
+        },
+        {
+            name: "千岛湖",
+            description: "浙江的湖泊景区，拥有清澈的湖水和众多岛屿，是休闲度假和水上活动的好去处。",
+            scores: { urban: 3, nature: 9, culture: 5, adventure: 6, relaxation: 9, food: 7, budget: 6, luxury: 7, warm: 7, cold: 4 }
+        },
+        {
+            name: "海南岛",
+            description: "中国最大的热带岛屿，拥有美丽的海滩、热带雨林和丰富的度假资源，是休闲度假的理想之地。",
+            scores: { urban: 6, nature: 9, culture: 6, adventure: 7, relaxation: 10, food: 8, budget: 5, luxury: 8, warm: 10, cold: 0 }
+        },
+        {
+            name: "哈尔滨",
+            description: "黑龙江省会，以冰雪文化和俄罗斯风情闻名，冰雪大世界是冬季旅游的热门目的地。",
+            scores: { urban: 7, nature: 6, culture: 7, adventure: 6, relaxation: 5, food: 8, budget: 7, luxury: 6, warm: 2, cold: 10 }
+        },
+        {
+            name: "昆明",
+            description: "云南省会，被誉为'春城'，气候宜人，拥有滇池、石林等自然景观，是休闲度假的好去处。",
+            scores: { urban: 7, nature: 7, culture: 7, adventure: 5, relaxation: 8, food: 8, budget: 7, luxury: 6, warm: 8, cold: 3 }
+        },
+        {
+            name: "天津",
+            description: "中国北方的直辖市，拥有独特的租界建筑和天津特色文化，是了解中西文化交融的好去处。",
+            scores: { urban: 8, nature: 4, culture: 8, adventure: 4, relaxation: 6, food: 8, budget: 7, luxury: 7, warm: 6, cold: 5 }
+        },
+        
+        // 国外城市
+        {
+            name: "东京",
+            description: "日本首都，现代与传统并存的国际大都市，拥有丰富的购物、美食和文化体验。",
+            scores: { urban: 10, nature: 3, culture: 8, adventure: 5, relaxation: 4, food: 9, budget: 3, luxury: 9, warm: 6, cold: 5 }
+        },
+        {
+            name: "大阪",
+            description: "日本第二大城市，以美食和购物闻名，大阪城、道顿堀等景点展现了关西文化的特色。",
+            scores: { urban: 9, nature: 3, culture: 7, adventure: 4, relaxation: 5, food: 10, budget: 4, luxury: 8, warm: 6, cold: 5 }
+        },
+        {
+            name: "京都",
+            description: "日本古都，拥有众多寺庙和传统文化遗产，是体验日本传统文化的最佳去处。",
+            scores: { urban: 6, nature: 7, culture: 10, adventure: 4, relaxation: 7, food: 8, budget: 5, luxury: 7, warm: 6, cold: 5 }
+        },
+        {
+            name: "奈良",
+            description: "日本古都，拥有众多历史遗迹和可爱的鹿群，是体验日本古代文化的好去处。",
+            scores: { urban: 5, nature: 7, culture: 9, adventure: 4, relaxation: 7, food: 7, budget: 6, luxury: 6, warm: 6, cold: 5 }
+        },
+        {
+            name: "镰仓",
+            description: "日本的历史古城，拥有大佛和海滨风光，是体验日本传统文化和自然风光的好去处。",
+            scores: { urban: 5, nature: 8, culture: 8, adventure: 5, relaxation: 7, food: 7, budget: 6, luxury: 6, warm: 6, cold: 5 }
+        },
+        {
+            name: "济州岛",
+            description: "韩国最大的岛屿，拥有火山地貌和美丽的海滨风光，是休闲度假的理想之地。",
+            scores: { urban: 5, nature: 9, culture: 6, adventure: 6, relaxation: 8, food: 7, budget: 6, luxury: 7, warm: 7, cold: 4 }
+        },
+        {
+            name: "伊斯坦布尔",
+            description: "土耳其最大城市，横跨欧亚两大洲，拥有丰富的历史文化遗产和独特的地理位置。",
+            scores: { urban: 8, nature: 5, culture: 10, adventure: 7, relaxation: 6, food: 8, budget: 6, luxury: 7, warm: 7, cold: 4 }
+        },
+        {
+            name: "贝尔格莱德",
+            description: "塞尔维亚首都，拥有丰富的历史文化和夜生活，是巴尔干半岛的重要城市。",
+            scores: { urban: 7, nature: 5, culture: 8, adventure: 6, relaxation: 6, food: 7, budget: 8, luxury: 5, warm: 6, cold: 5 }
+        },
+        {
+            name: "萨拉热窝",
+            description: "波黑的首都，融合了东欧和中东文化，拥有独特的历史建筑和战争遗迹，老城区展现了奥斯曼帝国时期的风貌。",
+            scores: { urban: 5, nature: 6, culture: 9, adventure: 6, relaxation: 5, food: 7, budget: 7, luxury: 4, warm: 6, cold: 5 }
+        },
+        {
+            name: "莫斯塔尔",
+            description: "波黑著名城市，以古老的莫斯塔尔桥闻名，展现了独特的巴尔干文化，老城区保留了奥斯曼时期的建筑风格。",
+            scores: { urban: 4, nature: 7, culture: 8, adventure: 6, relaxation: 6, food: 7, budget: 7, luxury: 4, warm: 7, cold: 4 }
+        },
+        {
+            name: "地拉那",
+            description: "阿尔巴尼亚首都，融合了共产主义时期和现代建筑，斯坎德培广场和布努克金字塔展现了城市的历史变迁。",
+            scores: { urban: 6, nature: 5, culture: 7, adventure: 5, relaxation: 5, food: 7, budget: 8, luxury: 4, warm: 7, cold: 4 }
+        },
+        {
+            name: "萨兰达",
+            description: "阿尔巴尼亚海滨城市，拥有美丽的爱奥尼亚海岸线和古希腊遗迹，是休闲度假的理想之地。",
+            scores: { urban: 4, nature: 8, culture: 6, adventure: 6, relaxation: 9, food: 7, budget: 7, luxury: 5, warm: 8, cold: 3 }
+        },
+        {
+            name: "维也纳",
+            description: "奥地利首都，以音乐艺术和建筑闻名，美泉宫、圣斯蒂芬大教堂等展现了哈布斯堡王朝的辉煌。",
+            scores: { urban: 8, nature: 5, culture: 10, adventure: 3, relaxation: 7, food: 8, budget: 5, luxury: 9, warm: 5, cold: 6 }
+        },
+        {
+            name: "萨尔茨堡",
+            description: "奥地利音乐之城，莫扎特的故乡，霍亨萨尔茨堡城堡和老城区展现了中世纪的风貌。",
+            scores: { urban: 6, nature: 7, culture: 9, adventure: 4, relaxation: 7, food: 8, budget: 6, luxury: 8, warm: 5, cold: 6 }
+        },
+        {
+            name: "多哈",
+            description: "卡塔尔首都，现代化的海湾都市，伊斯兰艺术博物馆和瓦吉夫市场展现了传统与现代的融合。",
+            scores: { urban: 9, nature: 4, culture: 7, adventure: 4, relaxation: 7, food: 8, budget: 4, luxury: 10, warm: 10, cold: 0 }
+        },
+        {
+            name: "迪拜",
+            description: "阿联酋最大城市，以奢华购物和现代建筑闻名，哈利法塔、棕榈岛等展现了城市的未来感。",
+            scores: { urban: 10, nature: 5, culture: 6, adventure: 6, relaxation: 8, food: 8, budget: 3, luxury: 10, warm: 10, cold: 0 }
+        },
+        {
+            name: "阿布扎比",
+            description: "阿联酋首都，融合传统与现代，谢赫扎耶德清真寺和法拉利主题公园展现了城市的多样性。",
+            scores: { urban: 9, nature: 5, culture: 7, adventure: 5, relaxation: 8, food: 8, budget: 4, luxury: 9, warm: 10, cold: 0 }
+        },
+        {
+            name: "沙迦",
+            description: "阿联酋文化之都，保留了传统阿拉伯风貌，众多博物馆和艺术展览展现了伊斯兰文化。",
+            scores: { urban: 7, nature: 4, culture: 9, adventure: 4, relaxation: 6, food: 7, budget: 6, luxury: 7, warm: 10, cold: 0 }
+        },
+        {
+            name: "曼谷",
+            description: "泰国首都，以寺庙建筑和美食闻名，大皇宫、卧佛寺等展现了泰国的文化精髓。",
+            scores: { urban: 9, nature: 4, culture: 8, adventure: 6, relaxation: 7, food: 10, budget: 7, luxury: 7, warm: 9, cold: 0 }
+        },
+        {
+            name: "芭提雅",
+            description: "泰国著名海滨度假城市，以海滩、夜生活和水上运动闻名，是放松休闲的理想之地。",
+            scores: { urban: 7, nature: 7, culture: 5, adventure: 7, relaxation: 9, food: 8, budget: 7, luxury: 7, warm: 9, cold: 0 }
+        },
+        {
+            name: "吉隆坡",
+            description: "马来西亚首都，现代化的东南亚都市，双子塔和云顶高原展现了城市的繁华与自然。",
+            scores: { urban: 8, nature: 5, culture: 7, adventure: 5, relaxation: 7, food: 9, budget: 7, luxury: 7, warm: 9, cold: 0 }
+        },
+        {
+            name: "新加坡",
+            description: "现代化的花园城市国家，融合多元文化，滨海湾花园和圣淘沙岛展现了城市与自然的和谐。",
+            scores: { urban: 10, nature: 6, culture: 8, adventure: 4, relaxation: 8, food: 9, budget: 5, luxury: 9, warm: 9, cold: 0 }
+        },
+        {
+            name: "海参崴",
+            description: "俄罗斯远东港口城市，融合了俄罗斯和亚洲文化，金角湾和要塞展现了城市的军事历史。",
+            scores: { urban: 6, nature: 7, culture: 7, adventure: 6, relaxation: 6, food: 7, budget: 7, luxury: 5, warm: 4, cold: 7 }
+        },
+        {
+            name: "伊尔库茨克",
+            description: "俄罗斯西伯利亚重要城市，临近贝加尔湖，木质建筑和冰雪节展现了西伯利亚的特色。",
+            scores: { urban: 5, nature: 8, culture: 7, adventure: 7, relaxation: 5, food: 6, budget: 7, luxury: 4, warm: 3, cold: 9 }
+        },
+    ];
+
+    // 全局变量
+    let currentQuestionIndex = 0;
+    let userScores = {
+        urban: 0, nature: 0, culture: 0, adventure: 0, relaxation: 0, 
+        food: 0, budget: 0, luxury: 0, warm: 0, cold: 0
+    };
+    let userAnswers = [];
+
+    // DOM元素
+    const questionTitle = document.getElementById('question-title');
+    const questionText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const resultContainer = document.getElementById('result-container');
+    const questionContainer = document.getElementById('question-container');
+    const destinationName = document.getElementById('destination-name');
+    const destinationDescription = document.getElementById('destination-description');
+    const restartBtn = document.getElementById('restart-btn');
+
+    // 初始化
+    function init() {
+        showQuestion(currentQuestionIndex);
+        
+        // 事件监听
+        prevBtn.addEventListener('click', showPreviousQuestion);
+        nextBtn.addEventListener('click', handleNextButton);
+        restartBtn.addEventListener('click', restartQuiz);
+    }
+
+    // 显示问题
+    function showQuestion(index) {
+        const question = questions[index];
+        questionTitle.textContent = `问题 ${index + 1}/10`;
+        questionText.textContent = question.text;
+        
+        // 清空选项容器
+        optionsContainer.innerHTML = '';
+        
+        // 根据问题类型创建不同的选项
+        if (question.type === 'radio') {
+            createRadioOptions(question, index);
+        } else if (question.type === 'slider') {
+            createSliderOption(question, index);
+        }
+        
+        // 更新按钮状态
+        updateButtonState();
+    }
+
+    // 创建单选选项
+    function createRadioOptions(question, questionIndex) {
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'radio-option';
+        
+        question.options.forEach((option, optionIndex) => {
+            const label = document.createElement('label');
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = `question-${questionIndex}`;
+            radio.value = optionIndex;
+            
+            // 如果用户之前已经回答过这个问题，选中对应的选项
+            if (userAnswers[questionIndex] !== undefined && userAnswers[questionIndex].optionIndex === optionIndex) {
+                radio.checked = true;
+            }
+            
+            label.appendChild(radio);
+            label.appendChild(document.createTextNode(option.text));
+            optionDiv.appendChild(label);
+        });
+        
+        optionsContainer.appendChild(optionDiv);
+    }
+
+    // 创建滑块选项
+    function createSliderOption(question, questionIndex) {
+        const sliderDiv = document.createElement('div');
+        sliderDiv.className = 'slider-option';
+        
+        const sliderContainer = document.createElement('div');
+        sliderContainer.className = 'slider-container';
+        
+        const sliderLabels = document.createElement('div');
+        sliderLabels.className = 'slider-labels';
+        
+        const minLabel = document.createElement('span');
+        minLabel.textContent = '较低';
+        
+        const maxLabel = document.createElement('span');
+        maxLabel.textContent = '较高';
+        
+        sliderLabels.appendChild(minLabel);
+        sliderLabels.appendChild(maxLabel);
+        
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.className = 'slider';
+        slider.min = question.min;
+        slider.max = question.max;
+        slider.step = 1;
+        
+        // 如果用户之前已经回答过这个问题，设置滑块的值
+        if (userAnswers[questionIndex] !== undefined) {
+            slider.value = userAnswers[questionIndex].value;
+        } else {
+            slider.value = Math.floor((question.min + question.max) / 2); // 默认值为中间值
+        }
+        
+        const valueDisplay = document.createElement('div');
+        valueDisplay.textContent = `当前选择: ${slider.value}`;
+        valueDisplay.style.textAlign = 'center';
+        valueDisplay.style.marginTop = '10px';
+        
+        slider.addEventListener('input', () => {
+            valueDisplay.textContent = `当前选择: ${slider.value}`;
+        });
+        
+        sliderContainer.appendChild(sliderLabels);
+        sliderContainer.appendChild(slider);
+        sliderContainer.appendChild(valueDisplay);
+        sliderDiv.appendChild(sliderContainer);
+        
+        optionsContainer.appendChild(sliderDiv);
+    }
+
+    // 更新按钮状态
+    function updateButtonState() {
+        prevBtn.disabled = currentQuestionIndex === 0;
+        
+        if (currentQuestionIndex === questions.length - 1) {
+            nextBtn.textContent = '查看结果';
+        } else {
+            nextBtn.textContent = '下一题';
+        }
+    }
+
+    // 显示上一个问题
+    function showPreviousQuestion() {
+        if (currentQuestionIndex > 0) {
+            currentQuestionIndex--;
+            showQuestion(currentQuestionIndex);
+        }
+    }
+
+    // 处理下一步按钮点击
+    function handleNextButton() {
+        // 保存当前问题的答案
+        saveAnswer();
+        
+        if (currentQuestionIndex < questions.length - 1) {
+            currentQuestionIndex++;
+            showQuestion(currentQuestionIndex);
+        } else {
+            // 显示结果
+            calculateResults();
+        }
+    }
+
+    // 保存答案
+    function saveAnswer() {
+        const question = questions[currentQuestionIndex];
+        
+        if (question.type === 'radio') {
+            const selectedOption = document.querySelector(`input[name="question-${currentQuestionIndex}"]:checked`);
+            
+            if (selectedOption) {
+                const optionIndex = parseInt(selectedOption.value);
+                const option = question.options[optionIndex];
+                
+                // 保存用户的选择
+                userAnswers[currentQuestionIndex] = {
+                    questionId: question.id,
+                    optionIndex: optionIndex
+                };
+                
+                // 更新分数
+                for (const [key, value] of Object.entries(option.score)) {
+                    if (userScores[key] !== undefined) {
+                        userScores[key] += value;
+                    } else {
+                        userScores[key] = value;
+                    }
+                }
+            }
+        } else if (question.type === 'slider') {
+            const slider = document.querySelector('.slider');
+            const value = parseInt(slider.value);
+            
+            // 保存用户的选择
+            userAnswers[currentQuestionIndex] = {
+                questionId: question.id,
+                value: value
+            };
+            
+            // 更新分数
+            userScores[question.scoreKey] = value;
+        }
+    }
+
+    // 计算结果
+    function calculateResults() {
+        // 计算与每个目的地的匹配度
+        const matches = destinations.map(destination => {
+            let matchScore = 0;
+            let totalWeight = 0;
+            
+            for (const [key, userValue] of Object.entries(userScores)) {
+                if (destination.scores[key] !== undefined) {
+                    // 计算该维度的匹配度（0-10分）
+                    const dimensionMatch = 10 - Math.abs(destination.scores[key] - userValue);
+                    matchScore += dimensionMatch;
+                    totalWeight += 1;
+                }
+            }
+            
+            // 计算平均匹配度（0-100分）
+            const averageMatch = totalWeight > 0 ? (matchScore / totalWeight) * 10 : 0;
+            
+            return {
+                destination: destination,
+                matchScore: averageMatch
+            };
+        });
+        
+        // 按匹配度排序
+        matches.sort((a, b) => b.matchScore - a.matchScore);
+        
+        // 显示最匹配的目的地
+        const bestMatch = matches[0];
+        destinationName.textContent = bestMatch.destination.name;
+        destinationDescription.textContent = bestMatch.destination.description;
+        
+        // 隐藏问题，显示结果
+        questionContainer.style.display = 'none';
+        resultContainer.style.display = 'block';
+    }
+
+    // 重新开始测试
+    function restartQuiz() {
+        // 重置变量
+        currentQuestionIndex = 0;
+        userScores = {
+            urban: 0, nature: 0, culture: 0, adventure: 0, relaxation: 0, 
+            food: 0, budget: 0, luxury: 0, warm: 0, cold: 0
+        };
+        userAnswers = [];
+        
+        // 重置UI
+        questionContainer.style.display = 'block';
+        resultContainer.style.display = 'none';
+        
+        // 显示第一个问题
+        showQuestion(currentQuestionIndex);
+    }
+
+    // 初始化应用
+    document.addEventListener('DOMContentLoaded', init);
+    document.getElementById('next-btn').addEventListener('click', function() {
+    const currentQuestion = questions[currentQuestionIndex];
+    const selectedOption = document.querySelector('input[name="question"]:checked');
+    
+    if (currentQuestion.type === 'radio' && !selectedOption) {
+        alert('请选择一个选项后再继续');
+        return;
+    } else if (currentQuestion.type === 'slider') {
+        const slider = document.querySelector('.slider');
+        if (!slider.value) {
+            alert('请拖动滑块选择一个值后再继续');
+            return;
+        }
+    }
+    
+    // 如果验证通过，继续执行下一题逻辑
+    if (currentQuestionIndex < questions.length - 1) {
+        currentQuestionIndex++;
+        showQuestion(currentQuestionIndex);
+        document.getElementById('prev-btn').disabled = false;
+    } else {
+        showResult();
+    }
+});
+
+    </script>
+</body>
+</html>
